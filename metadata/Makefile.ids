@@ -1,0 +1,9 @@
+SHELL := /bin/bash
+
+all: ids.txt
+
+ids.txt: latin_to_annotate.txt missing_ids.txt
+	comm -3 <(awk '{if (NR>1) {print $$1}}' < latin_to_annotate.txt | sort) <(sort < missing_ids.txt) > $@
+
+latin_to_annotate.txt:
+	wget https://raw.githubusercontent.com/dbamman/latin-texts/master/metadata/latin_to_annotate.txt
