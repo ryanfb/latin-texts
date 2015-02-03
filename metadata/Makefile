@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 DIRS := djvus latin_txt greatbooks
-TXT_PREFIXES := $(foreach dir,$(DIRS),$(dir)-language-confidence $(dir)-latin-confidence $(dir)-combined-confidence $(dir)-combined-confidence-diff)
+TXT_PREFIXES := $(foreach dir,$(DIRS),$(dir)-language-confidence $(dir)-latin-confidence $(dir)-combined-confidence $(dir)-combined-confidence-diff $(dir)-lines)
 TXT_SORTED := $(addsuffix -sorted,$(TXT_PREFIXES))
 TXT_TARGETS := $(addsuffix .txt,$(TXT_PREFIXES) $(TXT_SORTED))
 
@@ -16,6 +16,12 @@ print-%  : ; @echo $* = $($*)
 
 %-latin-confidence.txt: %
 	find $^ -type f | langid -l la -b | dos2unix > $@
+
+%-lines.txt: %
+	find $^ -type f -exec wc -l {} \; > $@
+
+%-lines-sorted.txt: %-lines.txt
+	sort -n < $^ > $@
 
 %-combined-confidence-sorted.txt: %-combined-confidence.txt
 	awk -F, '{print $$6 "," $$2 "," $$3 "," $$1}' < $^ | sort -g > $@
