@@ -18,22 +18,22 @@ print-%  : ; @echo $* = $($*)
 	find $^ -type f | langid -l la -b | dos2unix > $@
 
 %-lines.txt: %
-	find $^ -type f -exec wc -l {} \; > $@
+	find $^ -type f -exec wc -l {} \; | awk '{print $$1 "," $$2}' > $@
 
 %-lines-sorted.txt: %-lines.txt
 	sort -n < $^ > $@
 
 %-combined-confidence-sorted.txt: %-combined-confidence.txt
-	awk -F, '{print $$6 "," $$2 "," $$3 "," $$1}' < $^ | sort -g > $@
+	awk -F, '{print $$6 "," $$2 "," $$3 "," $$1 "," $$8}' < $^ | sort -g > $@
 
 %-confidence-sorted.txt: %-confidence.txt
 	awk -F, '{print $$3 "," $$2 "," $$1}' < $^ | sort -g > $@
 
-%-combined-confidence.txt: %-language-confidence.txt %-latin-confidence.txt
-	paste -d, <(sort < $(word 1,$^)) <(sort < $(word 2,$^)) > $@
+%-combined-confidence.txt: %-language-confidence.txt %-latin-confidence.txt %-lines.txt
+	paste -d, <(sort < $(word 1,$^)) <(sort < $(word 2,$^)) <(awk -F, '{print $$2 "," $$1}' < $(word 3,$^) | sort) > $@
 
 %-combined-confidence-diff.txt: %-combined-confidence-sorted.txt
-	awk -F, '{diff = sprintf("%.0f",$$1 - $$3); print diff "," $$1 "," $$2 "," $$3 "," $$4 }' < $^ > $@
+	awk -F, '{diff = sprintf("%.0f",($$1 - $$3) * $$5); print diff "," $$1 "," $$2 "," $$3 "," $$4 "," $$5 }' < $^ > $@
 
 %-combined-confidence-diff-sorted.txt: %-combined-confidence-diff.txt
 	sort -g < $^ > $@
@@ -62,6 +62,18 @@ latin_txt.tar.gz: gdown.pl
 
 latin_txt: latin_txt.tar.gz
 	tar xzvf $^
+
+missing_ids_404.txt missing_ids_200.txt: missing_ids.txt
+	rm -fv missing_ids_404.txt missing_ids_200.txt
+	while read id; do if curl -s --fail --head -o /dev/null http://archive.org/download/$$id; then echo $$id >> missing_ids_200.txt; else echo $$id >> missing_ids_404.txt; fi; done < missing_ids.txt
+
+missing_ids_200_derivatives.txt missing_ids_200_no_derivatives.txt: missing_ids_200.txt
+	rm -fv missing_ids_200_derivatives.txt missing_ids_200_no_derivatives.txt
+	while read id; do if (curl -s -L http://archive.org/download/$${id}/$${id}_files.xml | grep derivative > /dev/null 2>&1); then echo $$id >> missing_ids_200_derivatives.txt; else echo $$id >> missing_ids_200_no_derivatives.txt; fi; done < missing_ids_200.txt
+
+missing_ids_200_pdfs.txt missing_ids_200_no_pdfs.txt: missing_ids_200_derivatives.txt
+	rm -fv missing_ids_200_pdfs.txt missing_ids_200_no_pdfs.txt
+	while read id; do if curl -s --fail -L -r 0-0 -o /dev/null http://archive.org/download/$${id}/$${id}.pdf; then echo $$id >> missing_ids_200_pdfs.txt; else echo $$id >> missing_ids_200_no_pdfs.txt; fi; done < missing_ids_200_derivatives.txt
 
 clean:
 	rm -fv $(TXT_TARGETS)
