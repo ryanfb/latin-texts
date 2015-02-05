@@ -33,10 +33,10 @@ print-%  : ; @echo $* = $($*)
 	paste -d, <(sort < $(word 1,$^)) <(sort < $(word 2,$^)) <(awk -F, '{print $$2 "," $$1}' < $(word 3,$^) | sort) > $@
 
 %-combined-confidence-diff.txt: %-combined-confidence-sorted.txt
-	awk -F, '{diff = sprintf("%.0f",($$1 - $$3) * $$5); print diff "," $$1 "," $$2 "," $$3 "," $$4 "," $$5 }' < $^ > $@
+	awk -F, '{diff = sprintf("%.3f",($$1 - $$3) / $$5); print diff "," $$5 "," $$1 "," $$2 "," $$3 "," $$4 }' < $^ > $@
 
 %-combined-confidence-diff-sorted.txt: %-combined-confidence-diff.txt
-	sort -g < $^ > $@
+	sort -gr -t, -k1,1 -k2,2 < $^ > $@
 
 ids.txt: Makefile.ids
 	make -f Makefile.ids $@
