@@ -3,7 +3,7 @@ SHELL := /bin/bash
 DIRS := djvus latin_txt greatbooks
 TXT_PREFIXES := $(foreach dir,$(DIRS),$(dir)-language-confidence $(dir)-latin-confidence $(dir)-combined-confidence $(dir)-combined-confidence-diff $(dir)-lines)
 TXT_SORTED := $(addsuffix -sorted,$(TXT_PREFIXES))
-TXT_TARGETS := $(addsuffix .txt,$(TXT_PREFIXES) $(TXT_SORTED))
+TXT_TARGETS := $(addsuffix .txt,$(TXT_PREFIXES) $(TXT_SORTED)) latin_to_annotate.tsv
 
 TXT_FILES := language-confidence.txt latin-confidence.txt language-confidence-sorted.txt latin-confidence-sorted.txt combined-confidence.txt combined-confidence-sorted.txt
 
@@ -40,6 +40,27 @@ print-%  : ; @echo $* = $($*)
 
 ids.txt: Makefile.ids
 	make -f Makefile.ids $@
+
+latin_to_annotate_not_missing.txt: latin_to_annotate.txt ids.txt
+	awk 'FNR==NR{a[$$0]=$$0;next} FNR!=NR{ if ($$1 in a) print }' ids.txt latin_to_annotate.txt > $@
+
+latin_to_annotate_missing.txt: latin_to_annotate.txt ids.txt
+	awk 'FNR==NR{a[$$0]=$$0;next} FNR!=NR{ if (($$1 in a == 0) && (FNR > 1)) print }' ids.txt latin_to_annotate.txt > $@
+
+djvus-original-merged.txt: ids.txt latin_to_annotate_not_missing.txt djvus-combined-confidence-diff-sorted.txt
+	paste -d, <(sort -t, -k6,6 < djvus-combined-confidence-diff-sorted.txt) <(sort < latin_to_annotate_not_missing.txt) > $@
+
+latin_to_annotate_header.csv: latin_to_annotate.txt
+	head -n 1  $^ | tr "\\t" , | sed -e 's/$$/,langid/' > $@
+
+latin_to_annotate_missing.csv: latin_to_annotate_missing.txt
+	tr "\\t" , < $^ | sed -e 's/$$/,/' > $@
+
+djvus-original-merged-sorted.csv: djvus-original-merged.txt latin_to_annotate_missing.txt
+	sort -gr -t, -k1,1 -k2,2 < djvus-original-merged.txt|tr "\\t" ","|awk -F, '{print $$7 ",," $$9 ",,,," $$13 "," $$4}' > $@
+
+latin_to_annotate.tsv: latin_to_annotate_header.csv djvus-original-merged-sorted.csv latin_to_annotate_missing.csv
+	cat $^ | tr , "\\t" > $@
 
 djvus: ids.txt $(shell make -s -f Makefile.ids; sed -e 's/$$/_djvu.txt/' -e 's/^/djvus\//' < ids.txt)
 	touch djvus
