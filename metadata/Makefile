@@ -3,7 +3,7 @@ SHELL := /bin/bash
 DIRS := djvus latin_txt greatbooks
 TXT_PREFIXES := $(foreach dir,$(DIRS),$(dir)-language-confidence $(dir)-latin-confidence $(dir)-combined-confidence $(dir)-combined-confidence-diff $(dir)-lines)
 TXT_SORTED := $(addsuffix -sorted,$(TXT_PREFIXES))
-TXT_TARGETS := $(addsuffix .txt,$(TXT_PREFIXES) $(TXT_SORTED)) latin_to_annotate.tsv
+TXT_TARGETS := $(addsuffix .txt,$(TXT_PREFIXES) $(TXT_SORTED)) latin_to_annotate.tsv missing_ids_200_pdfs.txt missing_ids_200_no_pdfs.txt
 
 TXT_FILES := language-confidence.txt latin-confidence.txt language-confidence-sorted.txt latin-confidence-sorted.txt combined-confidence.txt combined-confidence-sorted.txt
 
@@ -83,6 +83,7 @@ latin_txt.tar.gz: gdown.pl
 
 latin_txt: latin_txt.tar.gz
 	tar xzvf $^
+	touch latin_txt
 
 missing_ids_404.txt missing_ids_200.txt: missing_ids.txt
 	rm -fv missing_ids_404.txt missing_ids_200.txt
