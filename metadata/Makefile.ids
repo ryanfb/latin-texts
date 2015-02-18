@@ -2,10 +2,11 @@ SHELL := /bin/bash
 
 all: ids.txt
 
-all_ids.txt :latin_to_annotate.txt
+all_ids.txt: latin_to_annotate.txt
 	awk '{if (NR>1) {print $$1}}' < latin_to_annotate.txt > $@
 
 missing_ids.txt: all_ids.txt
+	rm -fv missing_ids.txt
 	while read id; do if ! curl -s --fail -L -r 0-0 -o /dev/null http://archive.org/download/$${id}/$${id}_djvu.txt; then echo $$id >> missing_ids.txt; fi; done < all_ids.txt
 
 ids.txt: all_ids.txt missing_ids.txt

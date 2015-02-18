@@ -3,7 +3,7 @@ SHELL := /bin/bash
 DIRS := djvus latin_txt greatbooks
 TXT_PREFIXES := $(foreach dir,$(DIRS),$(dir)-language-confidence $(dir)-latin-confidence $(dir)-combined-confidence $(dir)-combined-confidence-diff $(dir)-lines)
 TXT_SORTED := $(addsuffix -sorted,$(TXT_PREFIXES))
-TXT_TARGETS := $(addsuffix .txt,$(TXT_PREFIXES) $(TXT_SORTED)) latin_to_annotate.tsv missing_ids_200_pdfs.txt missing_ids_200_no_pdfs.txt
+TXT_TARGETS := $(addsuffix .txt,$(TXT_PREFIXES) $(TXT_SORTED)) latin_to_annotate.tsv missing_ids_200_pdfs.txt missing_ids_200_no_pdfs.txt missing_ids_200_xmls.txt missing_ids_200_no_xmls.txt
 
 TXT_FILES := language-confidence.txt latin-confidence.txt language-confidence-sorted.txt latin-confidence-sorted.txt combined-confidence.txt combined-confidence-sorted.txt
 
@@ -87,7 +87,7 @@ latin_txt: latin_txt.tar.gz
 
 missing_ids_404.txt missing_ids_200.txt: missing_ids.txt
 	rm -fv missing_ids_404.txt missing_ids_200.txt
-	while read id; do if curl -s --fail --head -o /dev/null http://archive.org/download/$$id; then echo $$id >> missing_ids_200.txt; else echo $$id >> missing_ids_404.txt; fi; done < missing_ids.txt
+	while read id; do if curl --retry 5 -s --fail --head -o /dev/null http://archive.org/download/$$id; then echo $$id >> missing_ids_200.txt; else echo $$id >> missing_ids_404.txt; fi; done < missing_ids.txt
 
 missing_ids_200_derivatives.txt missing_ids_200_no_derivatives.txt: missing_ids_200.txt
 	rm -fv missing_ids_200_derivatives.txt missing_ids_200_no_derivatives.txt
@@ -95,7 +95,11 @@ missing_ids_200_derivatives.txt missing_ids_200_no_derivatives.txt: missing_ids_
 
 missing_ids_200_pdfs.txt missing_ids_200_no_pdfs.txt: missing_ids_200_derivatives.txt
 	rm -fv missing_ids_200_pdfs.txt missing_ids_200_no_pdfs.txt
-	while read id; do if curl -s --fail -L -r 0-0 -o /dev/null http://archive.org/download/$${id}/$${id}.pdf; then echo $$id >> missing_ids_200_pdfs.txt; else echo $$id >> missing_ids_200_no_pdfs.txt; fi; done < missing_ids_200_derivatives.txt
+	while read id; do if curl --retry 5 -s --fail -L -r 0-0 -o /dev/null http://archive.org/download/$${id}/$${id}.pdf; then echo $$id >> missing_ids_200_pdfs.txt; else echo $$id >> missing_ids_200_no_pdfs.txt; fi; done < missing_ids_200_derivatives.txt
+
+missing_ids_200_xmls.txt missing_ids_200_no_xmls.txt: missing_ids_200_derivatives.txt
+	rm -fv missing_ids_200_xmls.txt missing_ids_200_no_xmls.txt
+	while read id; do if curl --retry 5 -s --fail -L -r 0-0 -o /dev/null http://archive.org/download/$${id}/$${id}_djvu.xml; then echo $$id >> missing_ids_200_xmls.txt; else echo $$id >> missing_ids_200_no_xmls.txt; fi; done < missing_ids_200_derivatives.txt
 
 clean:
 	rm -fv $(TXT_TARGETS)
