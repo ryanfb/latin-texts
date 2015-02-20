@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-DIRS := djvus latin_txt greatbooks djvu_xmls djvu_xml_txts
+DIRS := djvus latin_txt greatbooks djvu_xmls djvu_xml_txts ocr-results
 TXT_PREFIXES := $(foreach dir,$(DIRS),$(dir)-language-confidence $(dir)-latin-confidence $(dir)-combined-confidence $(dir)-combined-confidence-diff $(dir)-lines)
 TXT_SORTED := $(addsuffix -sorted,$(TXT_PREFIXES))
 TXT_TARGETS := $(addsuffix .txt,$(TXT_PREFIXES) $(TXT_SORTED)) latin_to_annotate.tsv missing_ids_200_pdfs.txt missing_ids_200_no_pdfs.txt missing_ids_200_xmls.txt missing_ids_200_no_xmls.txt
@@ -95,6 +95,14 @@ djvu_xmls: missing_ids_200_xmls.txt
 	mkdir djvu_xmls
 	while read i; do wget -P djvu_xmls "https://archive.org/download/$${i}/$${i}_djvu.xml"; done < missing_ids_200_xmls.txt
 	touch djvu_xmls
+
+ocr-results:
+	wget 'https://github.com/ryanfb/latin-texts-ocr/archive/master.zip'
+	unzip master.zip
+	rm -v master.zip
+	mv -v latin-texts-ocr-master/ocr-results ocr-results
+	rm -rfv latin-texts-ocr-master
+	touch ocr-results
 
 missing_ids_404.txt missing_ids_200.txt: missing_ids.txt
 	rm -fv missing_ids_404.txt missing_ids_200.txt
