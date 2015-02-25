@@ -96,10 +96,16 @@ djvu_xmls: missing_ids_200_xmls.txt
 	while read i; do wget -P djvu_xmls "https://archive.org/download/$${i}/$${i}_djvu.xml"; done < missing_ids_200_xmls.txt
 	touch djvu_xmls
 
-ocr-results:
-	wget 'https://github.com/ryanfb/latin-texts-ocr/archive/master.zip'
+.PHONY: downloads
+
+downloads:
+	wget -N -c 'https://github.com/ryanfb/latin-texts-ocr/archive/master.zip'
+
+master.zip: downloads
+
+ocr-results: master.zip
+	rm -rf ocr-results
 	unzip master.zip
-	rm -v master.zip
 	mv -v latin-texts-ocr-master/ocr-results ocr-results
 	rm -rfv latin-texts-ocr-master
 	touch ocr-results
